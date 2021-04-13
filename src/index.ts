@@ -6,6 +6,7 @@ import "colors";
 import config from "config";
 import os from "os";
 
+import routes from "./routes";
 import { masterLog } from "./logger";
 import Server from "./server";
 
@@ -17,6 +18,7 @@ const run = async () => {
   masterLog.info(`CPU's found: ${cpuCount.toString().blue.bold}`);
   masterLog.info(`Worker pool count: ${poolSize.toString().blue.bold}`);
   const server = new Server(
+    routes,
     poolSize,
     config.get("cors_options"),
     config.get("is_test")

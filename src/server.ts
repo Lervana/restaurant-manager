@@ -6,16 +6,11 @@ import limit from "express-rate-limit";
 import util from "util";
 import fs from "fs";
 import https from "https";
-// import cluster from "cluster";
-// import bodyParser from "body-parser";
-// import express, { Express } from "express";
-//
-// import * as https from "https";
-// import * as fs from "fs";
-// import * as util from "util";
 
+import { IRoute } from "./types/interfaces";
 import { masterLog, allLog, log } from "./logger";
 import databaseProvider from "./database";
+import { METHOD } from "./types/enums";
 
 const PUBLIC_ROUTES = "/api/public";
 const PRIVATE_ROUTES = "/api/private";
@@ -24,7 +19,12 @@ const readFile = util.promisify(fs.readFile);
 export default class Server {
   private readonly instance: Express;
 
-  constructor(poolSize: number, corsOptions: object, isTest: any) {
+  constructor(
+    routes: IRoute[],
+    poolSize: number,
+    corsOptions: object,
+    isTest: any
+  ) {
     masterLog.info("Creating server instance...");
 
     this.instance = express();
@@ -45,7 +45,7 @@ export default class Server {
         for (let index = 0; index < poolSize; index += 1) cluster.fork();
       masterLog.info("Configuring master instance " + "[done]".green);
     } else {
-      this.configureRoutes();
+      this.configureRoutes(routes);
     }
   }
 
@@ -72,8 +72,40 @@ export default class Server {
     }, 300);
   }
 
-  private configureRoutes() {
+  private configureRoutes(routes: IRoute[]) {
     allLog.info("Configuring routes...");
+    if (!cluster.isMaster) {
+      routes.forEach(({ method, path, cbs }: IRoute) => {
+        allLog.info(`Adding route: ${`[${method}] ${path}`}`, "yellow");
+
+        if (!path || !cbs || cbs.length === 0)
+          throw new Error(
+            "Route need to have defined method, path and callbacks"
+          );
+
+        switch (method) {
+          case METHOD.GET:
+            this.instance.get(path, cbs);
+            break;
+          case METHOD.POST:
+            this.instance.post(path, cbs);
+            break;
+          case METHOD.PUT:
+            this.instance.put(path, cbs);
+            break;
+          case METHOD.PATCH:
+            this.instance.patch(path, cbs);
+            break;
+          case METHOD.DELETE:
+            this.instance.delete(path, cbs);
+            break;
+          default:
+            throw new Error("Unknown method");
+        }
+      });
+    }
+
+    allLog.info("Configuring routes " + "[done]".green);
   }
 
   async start(port: any, name: any, keyPath: string, certPath: string) {
