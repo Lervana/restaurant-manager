@@ -9,6 +9,7 @@ import os from "os";
 import routes from "./routes";
 import { masterLog } from "./logger";
 import Server from "./server";
+import GraphQL from "./graphQL";
 
 import "./database";
 
@@ -19,6 +20,7 @@ const run = async () => {
   masterLog.info(`Worker pool count: ${poolSize.toString().blue.bold}`);
   const server = new Server(
     routes,
+    GraphQL,
     poolSize,
     config.get("cors_options"),
     config.get("is_test")

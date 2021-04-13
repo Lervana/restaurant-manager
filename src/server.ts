@@ -1,11 +1,12 @@
 import cors from "cors";
-import helmet from "helmet";
 import cluster from "cluster";
 import express, { Express } from "express";
 import limit from "express-rate-limit";
-import util from "util";
+import { graphqlHTTP } from "express-graphql";
 import fs from "fs";
+import helmet from "helmet";
 import https from "https";
+import util from "util";
 
 import { IRoute } from "./types/interfaces";
 import { masterLog, allLog, log } from "./logger";
@@ -21,6 +22,7 @@ export default class Server {
 
   constructor(
     routes: IRoute[],
+    graphQlConfig,
     poolSize: number,
     corsOptions: object,
     isTest: any
@@ -46,6 +48,7 @@ export default class Server {
       masterLog.info("Configuring master instance " + "[done]".green);
     } else {
       this.configureRoutes(routes);
+      this.configureGraphQL(graphQlConfig);
     }
   }
 
@@ -75,7 +78,7 @@ export default class Server {
   private configureRoutes(routes: IRoute[]) {
     allLog.info("Configuring routes...");
     if (!cluster.isMaster) {
-      routes.forEach(({ method, path, cbs }: IRoute) => {
+      routes.forEach(({ method, path, cbs, isPublic }: IRoute) => {
         allLog.info(`Adding route: ${`[${method}] ${path}`}`, "yellow");
 
         if (!path || !cbs || cbs.length === 0)
@@ -83,21 +86,25 @@ export default class Server {
             "Route need to have defined method, path and callbacks"
           );
 
+        const prefixedPath = `${
+          isPublic ? PUBLIC_ROUTES : PRIVATE_ROUTES
+        }${path}`;
+
         switch (method) {
           case METHOD.GET:
-            this.instance.get(path, cbs);
+            this.instance.get(prefixedPath, cbs);
             break;
           case METHOD.POST:
-            this.instance.post(path, cbs);
+            this.instance.post(prefixedPath, cbs);
             break;
           case METHOD.PUT:
-            this.instance.put(path, cbs);
+            this.instance.put(prefixedPath, cbs);
             break;
           case METHOD.PATCH:
-            this.instance.patch(path, cbs);
+            this.instance.patch(prefixedPath, cbs);
             break;
           case METHOD.DELETE:
-            this.instance.delete(path, cbs);
+            this.instance.delete(prefixedPath, cbs);
             break;
           default:
             throw new Error("Unknown method");
@@ -107,6 +114,17 @@ export default class Server {
 
     allLog.info("Configuring routes " + "[done]".green);
   }
+
+  private configureGraphQL = () => {
+    this.instance.use(
+      PRIVATE_ROUTES + "/graphql",
+      graphqlHTTP({
+        schema: GraphQL.schema,
+        rootValue: GraphQL.root,
+        graphiql: true,
+      })
+    );
+  };
 
   async start(port: any, name: any, keyPath: string, certPath: string) {
     if (cluster.isMaster) {
