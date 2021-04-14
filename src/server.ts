@@ -3,6 +3,7 @@ import cluster from "cluster";
 import express, { Express } from "express";
 import limit from "express-rate-limit";
 import { graphqlHTTP } from "express-graphql";
+import { GraphQLSchema } from "graphql";
 import fs from "fs";
 import helmet from "helmet";
 import https from "https";
@@ -22,7 +23,7 @@ export default class Server {
 
   constructor(
     routes: IRoute[],
-    graphQlConfig,
+    schema: GraphQLSchema,
     poolSize: number,
     corsOptions: object,
     isTest: any
@@ -48,7 +49,7 @@ export default class Server {
       masterLog.info("Configuring master instance " + "[done]".green);
     } else {
       this.configureRoutes(routes);
-      this.configureGraphQL(graphQlConfig);
+      this.configureGraphQL(schema);
     }
   }
 
@@ -115,14 +116,10 @@ export default class Server {
     allLog.info("Configuring routes " + "[done]".green);
   }
 
-  private configureGraphQL = () => {
+  private configureGraphQL = (schema: GraphQLSchema) => {
     this.instance.use(
       PRIVATE_ROUTES + "/graphql",
-      graphqlHTTP({
-        schema: GraphQL.schema,
-        rootValue: GraphQL.root,
-        graphiql: true,
-      })
+      graphqlHTTP({ schema: schema })
     );
   };
 
