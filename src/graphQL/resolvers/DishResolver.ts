@@ -6,4 +6,8 @@ export class DishResolver {
   hello() {
     return "world";
   }
+  @Query(() => String)
+  hello2() {
+    return "world";
+  }
 }

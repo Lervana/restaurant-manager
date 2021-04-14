@@ -6,4 +6,5 @@ export interface IRoute {
   method: METHOD;
   path: string;
   cbs: RequestHandler[];
+  isPublic: boolean;
 }
