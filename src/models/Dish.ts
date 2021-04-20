@@ -1,7 +1,11 @@
 import { model, Schema } from "mongoose";
 
 const dishSchema = new Schema({
-  category: String,
+  category: {
+    type: String,
+    trim: true,
+    required: true,
+  },
   name: {
     type: String,
     trim: true,
@@ -9,7 +13,10 @@ const dishSchema = new Schema({
     unique: true,
   },
   description: String,
-  price_pln: Number,
+  price_pln: {
+    type: Number,
+    required: true,
+  },
   created: { type: Date, default: Date.now },
   updated: { type: Date, default: Date.now },
 });

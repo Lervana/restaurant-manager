@@ -3,7 +3,33 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+"""
+The javascript `Date` as string. Type represents date and time as the ISO Date string.
+"""
+scalar DateTime
+
+"""Object representing menu position"""
+type Dish {
+  category: String!
+  created: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  price_pln: Float!
+  updated: DateTime!
+}
+
+input DishInput {
+  category: String!
+  description: String
+  name: String!
+  price_pln: Float!
+}
+
+type Mutation {
+  addRecipe(dishData: DishInput!): Dish!
+}
+
 type Query {
-  hello: String!
-  hello2: String!
+  example: Boolean!
 }

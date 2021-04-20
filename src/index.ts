@@ -10,9 +10,8 @@ import { buildSchema } from "type-graphql";
 
 import routes from "./routes";
 import { masterLog } from "./logger";
-import { resolvers } from "./graphQL";
+import { resolvers } from "./graphQL/resolvers";
 import Server from "./server";
-
 import "./database";
 
 const run = async () => {
