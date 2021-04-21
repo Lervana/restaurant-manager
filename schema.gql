@@ -23,13 +23,13 @@ input DishInput {
   category: String!
   description: String
   name: String!
-  price_pln: Float!
+  price: Float!
 }
 
 type Mutation {
-  addRecipe(dishData: DishInput!): Dish!
+  addDish(dishData: DishInput!): Dish!
 }
 
 type Query {
-  example: Boolean!
+  getDishes: [Dish!]!
 }

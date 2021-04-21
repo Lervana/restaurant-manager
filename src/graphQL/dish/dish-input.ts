@@ -19,5 +19,5 @@ export class DishInput implements Partial<Dish> {
 
   @Field()
   @Min(0)
-  price_pln!: number;
+  price!: number;
 }

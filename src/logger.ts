@@ -17,7 +17,16 @@ interface ISilentLog {
   msg: string;
 }
 
-class Logger {
+interface ILogger {
+  trace: (message: string, prefixes?: string[], color?: string) => void;
+  debug: (message: string, prefixes?: string[], color?: string) => void;
+  info: (message: string, prefixes?: string[], color?: string) => void;
+  warn: (message: string, prefixes?: string[], color?: string) => void;
+  error: (message: string, prefixes?: string[], color?: string) => void;
+  fatal: (message: string, prefixes?: string[], color?: string) => void;
+}
+
+export class Log implements ILogger {
   private readonly client: object;
   public silentLogs: ISilentLog[] = [];
 
@@ -70,7 +79,7 @@ class Logger {
     }
   };
 
-  private createLog = (
+  protected createLog = (
     level: LOG_LEVEL,
     message: string,
     prefixes?: string[],
@@ -87,60 +96,120 @@ class Logger {
     }
   };
 
-  //Log on first worker
+  public trace(message: string, prefixes?: string[], color?: string) {
+    this.createLog(LOG_LEVEL.TRACE, message, prefixes, color);
+  }
+
+  public debug(message: string, prefixes?: string[], color?: string) {
+    this.createLog(LOG_LEVEL.DEBUG, message, prefixes, color);
+  }
+
+  public info(message: string, prefixes?: string[], color?: string) {
+    this.createLog(LOG_LEVEL.INFO, message, prefixes, color);
+  }
+
+  public warn(message: string, prefixes?: string[], color?: string) {
+    this.createLog(LOG_LEVEL.WARN, message, prefixes, color);
+  }
+
+  public error(message: string, prefixes?: string[], color?: string) {
+    this.createLog(LOG_LEVEL.ERROR, message, prefixes, color);
+  }
+
+  public fatal(message: string, prefixes?: string[], color?: string) {
+    this.createLog(LOG_LEVEL.FATAL, message, prefixes, color);
+  }
+}
+
+export class MasterLog extends Log implements ILogger {
+  constructor() {
+    super();
+  }
+
+  public trace(message: string, prefixes?: string[], color?: string) {
+    cluster.isMaster && super.trace(message, prefixes, color);
+  }
+
+  public debug(message: string, prefixes?: string[], color?: string) {
+    cluster.isMaster && super.debug(message, prefixes, color);
+  }
+
+  public info(message: string, prefixes?: string[], color?: string) {
+    cluster.isMaster && super.info(message, prefixes, color);
+  }
+
+  public warn(message: string, prefixes?: string[], color?: string) {
+    cluster.isMaster && super.warn(message, prefixes, color);
+  }
+
+  public error(message: string, prefixes?: string[], color?: string) {
+    cluster.isMaster && super.error(message, prefixes, color);
+  }
+
+  public fatal(message: string, prefixes?: string[], color?: string) {
+    cluster.isMaster && super.fatal(message, prefixes, color);
+  }
+}
+
+export class FirstWorkerLog extends Log implements ILogger {
+  constructor() {
+    super();
+  }
+
   private logOnFirstWorkerSync = () =>
     cluster && cluster.worker && cluster.worker.id && cluster.worker.id === 1;
 
-  //Log on all workers
-  public log = {
-    trace: (message: string, prefixes?: string[], color?: string) =>
-      this.createLog(LOG_LEVEL.TRACE, message, prefixes, color),
-    debug: (message: string, prefixes?: string[], color?: string) =>
-      this.createLog(LOG_LEVEL.DEBUG, message, prefixes, color),
-    info: (message: string, prefixes?: string[], color?: string) =>
-      this.createLog(LOG_LEVEL.INFO, message, prefixes, color),
-    warn: (message: string, prefixes?: string[], color?: string) =>
-      this.createLog(LOG_LEVEL.WARN, message, prefixes, color),
-    error: (message: string, prefixes?: string[], color?: string) =>
-      this.createLog(LOG_LEVEL.ERROR, message, prefixes, color),
-    fatal: (message: string, prefixes?: string[], color?: string) =>
-      this.createLog(LOG_LEVEL.FATAL, message, prefixes, color),
-  };
+  public trace(message: string, prefixes?: string[], color?: string) {
+    this.logOnFirstWorkerSync() && super.trace(message, ["#1ForAll"], color);
+  }
 
-  //Log only on master
-  public masterLog = {
-    trace: (message: string, prefixes?: string[], color?: string) =>
-      cluster.isMaster && this.log.trace(message, prefixes, color),
-    debug: (message: string, prefixes?: string[], color?: string) =>
-      cluster.isMaster && this.log.debug(message, prefixes, color),
-    info: (message: string, prefixes?: string[], color?: string) =>
-      cluster.isMaster && this.log.info(message, prefixes, color),
-    warn: (message: string, prefixes?: string[], color?: string) =>
-      cluster.isMaster && this.log.warn(message, prefixes, color),
-    error: (message: string, prefixes?: string[], color?: string) =>
-      cluster.isMaster && this.log.error(message, prefixes, color),
-    fatal: (message: string, prefixes?: string[], color?: string) =>
-      cluster.isMaster && this.log.fatal(message, prefixes, color),
-  };
+  public debug(message: string, prefixes?: string[], color?: string) {
+    this.logOnFirstWorkerSync() && super.debug(message, ["#1ForAll"], color);
+  }
 
-  //Log for all in one
-  public allLog = {
-    trace: (message: string, color?: string) =>
-      this.logOnFirstWorkerSync() && this.log.trace(message, ["all"], color),
-    debug: (message: string, color?: string) =>
-      this.logOnFirstWorkerSync() && this.log.debug(message, ["all"], color),
-    info: (message: string, color?: string) =>
-      this.logOnFirstWorkerSync() && this.log.info(message, ["all"], color),
-    warn: (message: string, color?: string) =>
-      this.logOnFirstWorkerSync() && this.log.warn(message, ["all"], color),
-    error: (message: string, color?: string) =>
-      this.logOnFirstWorkerSync() && this.log.error(message, ["all"], color),
-    fatal: (message: string, color?: string) =>
-      this.logOnFirstWorkerSync() && this.log.fatal(message, ["all"], color),
-  };
+  public info(message: string, prefixes?: string[], color?: string) {
+    this.logOnFirstWorkerSync() && super.info(message, ["#1ForAll"], color);
+  }
+
+  public warn(message: string, prefixes?: string[], color?: string) {
+    this.logOnFirstWorkerSync() && super.warn(message, ["#1ForAll"], color);
+  }
+
+  public error(message: string, prefixes?: string[], color?: string) {
+    this.logOnFirstWorkerSync() && super.error(message, ["#1ForAll"], color);
+  }
+
+  public fatal(message: string, prefixes?: string[], color?: string) {
+    this.logOnFirstWorkerSync() && super.fatal(message, ["#1ForAll"], color);
+  }
 }
 
-const logger = new Logger();
-export const log = logger.log;
-export const masterLog = logger.masterLog;
-export const allLog = logger.allLog;
+export const log = new Log();
+export const masterLog = new MasterLog();
+export const firstWorkerLogg = new FirstWorkerLog();
+
+export const wrapWithInfoLogSync = (
+  logger: ILogger,
+  message: string,
+  action: Function
+) => {
+  const start = new Date().getTime();
+  logger.info(message);
+  action();
+  logger.info(
+    `${message} ` + `[done] (${new Date().getTime() - start}ms)`.green
+  );
+};
+
+export const wrapWithInfoLogAsync = async (
+  logger: ILogger,
+  message: string,
+  action: Function
+) => {
+  const start = new Date().getTime();
+  logger.info(message);
+  await action();
+  logger.info(
+    `${message} ` + `[done] (${new Date().getTime() - start}ms)`.green
+  );
+};
